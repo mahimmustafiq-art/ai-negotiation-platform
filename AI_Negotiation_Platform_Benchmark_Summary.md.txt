@@ -1,0 +1,115 @@
+AI_Negotiation_Platform_Benchmark_Summary.md
+# Benchmark Summary
+
+## Overview
+
+The AI Negotiation Platform was evaluated through deterministic benchmark scenarios, database-level validation tests, security checks, and selected live LLM demonstrations.
+
+The primary objective was to verify that PostgreSQL independently enforces negotiation rules, protects private mandates, prevents invalid settlements, and maintains consistent state transitions.
+
+## Benchmark Results
+
+| Metric | Result |
+|---|---:|
+| Deterministic Checks Passed | 121 |
+| Deterministic Checks Failed | 0 |
+| Benchmark Scenarios Passed | 15 / 15 |
+| Mandate Violations | 0 |
+| INV-07 Race Condition Test | 10 PASS / 0 FAIL |
+| Audited Settlements | 16 |
+| Settlement Mandate Violations | 0 |
+
+## Scenario Coverage
+
+The 15 benchmark scenarios covered:
+
+- Easy and narrow-overlap negotiations
+- No-overlap and failed-deal handling
+- Round-limit arbitration
+- Offer oscillation and urgency
+- Fake competitor and policy manipulation attempts
+- Information disclosure and prompt-injection scenarios
+- Unauthorized acceptance attempts
+- Missing negotiation terms
+- Stale offers and hash mismatches
+- Multiple buyers negotiating with one seller
+- Duplicate requests and retry handling
+- Competing acceptance requests
+- Human escalation and review
+
+All 15 deterministic scenarios passed.
+
+## Additional Validation
+
+Additional user-executed tests included:
+
+| Test | Checks Passed | Failed |
+|---|---:|---:|
+| T06 Function Access Validation | 53 | 0 |
+| T07 Adversarial Validation | 215 | 0 |
+| T08 Arbitration Validation | 222 | 0 |
+| T09 Demo C Validation | 31 | 0 |
+| INV-07 Concurrency Test | 10 | 0 |
+
+### Concurrency Validation
+
+The INV-07 test used PostgreSQL with three real database connections.
+
+Two competing ACCEPT requests were submitted for the same negotiation session using different request IDs.
+
+Observed result:
+
+- One request successfully completed settlement.
+- The competing request was rejected with `INVALID_STATE`.
+- Exactly one settlement was created.
+- No duplicate acceptance or settlement occurred.
+
+Scope: One negotiation session with two competing acceptance requests.
+
+## LLM Demonstrations
+
+Selected live demonstrations were recorded separately from deterministic benchmark results.
+
+- **Demo A:** Multiple live negotiation runs resulting in settlement.
+- **Demo B3:** Live arbitration and party voting, with earlier negotiation steps partly scripted.
+- **Demo C2:** One live observation in which the Buyer Agent resisted a manipulation attempt.
+
+These demonstrations show system behavior with a live LLM, but they are not statistical evaluations of model performance.
+
+## Security and Reliability Observations
+
+The platform includes:
+
+- Database-enforced private negotiation mandates.
+- Transactional settlement validation.
+- Session-level locking and state validation.
+- Idempotency and duplicate-request protection.
+- Audit events for tracking negotiation decisions.
+- Human escalation for unresolved negotiations.
+
+## Known Limitations
+
+The following limitations were identified during testing:
+
+1. The manipulation scanner uses heuristic detection and is not a complete defense against every manipulation technique.
+2. Exact-match self-leak detection may miss paraphrased disclosures.
+3. Some deterministic scenarios use scripted agents and validate database enforcement rather than LLM negotiation intelligence.
+4. S12 and S14 were tested sequentially. True concurrent acceptance behavior was separately verified through INV-07.
+5. Live LLM demonstrations represent limited observations. Model variability has not been statistically measured.
+6. Token cost, latency distribution, and negotiation outcome quality across large numbers of LLM runs have not yet been benchmarked.
+7. The n8n PostgreSQL credential currently uses the Ignore SSL Issues setting, which should be improved for production deployment.
+
+## Testing Environment
+
+- Database: Supabase PostgreSQL 17
+- Orchestration: n8n
+- Runtime LLM: Groq `openai/gpt-oss-120b`
+- Validation: PostgreSQL functions and deterministic SQL benchmarks
+
+## Conclusion
+
+The benchmark results demonstrate that the database enforcement layer successfully handled all 15 deterministic scenarios, with 121 checks passed and zero failures.
+
+The separate concurrency validation also confirmed that competing acceptance requests cannot create duplicate settlements within the tested scenario.
+
+These results provide evidence of the platform's database-level enforcement and transaction safety within the documented test scope. They do not establish production readiness or guarantee the behavior of every live LLM negotiation.
